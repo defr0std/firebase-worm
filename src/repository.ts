@@ -1,6 +1,6 @@
 import { SessionImpl } from "./sessionImpl";
 import { ClassConstructor, entityPath, Entity } from "./entity";
-import { Observable, ReplaySubject, BehaviorSubject } from "rxjs";
+import { Observable } from "rxjs";
 import { map, first } from "rxjs/operators";
 import { QueryFunc, Query } from "./query";
 
@@ -53,38 +53,33 @@ export class Repository<T extends Entity> {
   }
 
   private observableList(path: string, query?: QueryFunc<T>): Observable<EntityList<T>> {
-    const res: EntityList<T> = {
-      entities: [],
-      ids: [],
-    };
-    const sub = new BehaviorSubject<EntityList<T>>(res);
-    let ref: firebase.database.Query = this.sessionImpl.db.ref(path);
-    if (query) {
-      const q = query(new Query<T>());
-      ref = q.toRef(ref);
-    }
-    ref.on("child_added", (s, prevKey) => {
-      const prevIndex = res.ids.findIndex(x => x === prevKey);
-      if (prevIndex === -1) {
-        res.entities.push(s.val());
-        res.ids.push(s.key);
+    return new Observable(observer => {
+      let ref: firebase.database.Query = this.sessionImpl.db.ref(path);
+      if (query) {
+        const q = query(new Query<T>());
+        ref = q.toRef(ref);
       }
-      else {
-        res.entities.splice(prevIndex + 1, 0, s.val());
-        res.ids.splice(prevIndex + 1, 0, s.key);
-      }
-      sub.next(res);
+      ref.on("value", s => {
+        const res: EntityList<T> = {
+          entities: [],
+          ids: [],
+        };
+        s.forEach(c => {
+          res.entities.push(c.val());
+          res.ids.push(c.key);
+        });
+        observer.next(res);
+      })
     });
-    return sub;
   }
 
   private observableObject<T>(path: string): Observable<T> {
-    const sub = new ReplaySubject<T>(1);
-    const ref = this.sessionImpl.db.ref(path);
-    ref.on("value", (s) => {
-      sub.next(s.val());
+    return new Observable(observer => {
+      const ref = this.sessionImpl.db.ref(path);
+      ref.on("value", (s) => {
+        observer.next(s.val());
+      });
     });
-    return sub;
   }
 
   private combinePath(base: string, child: string) {

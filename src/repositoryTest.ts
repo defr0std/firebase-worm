@@ -4,6 +4,13 @@ import { initializeAdminApp } from "@firebase/testing";
 import { Session } from "./session";
 import { entity, Entity } from "./entity";
 import { Repository } from "./repository";
+import { shareReplay } from "rxjs/operators";
+
+@entity("/products")
+class Product extends Entity {
+  price: number;
+  categories: { [id: string]: true };
+}
 
 describe("Repository", () => {
   let app: firebase.app.App;
@@ -180,6 +187,74 @@ describe("Repository", () => {
     }));
   });
 
+  it("listens to changes of single entity", () => {
+    app.database().ref("/products/1").set({
+      price: 123,
+    });
+    const result = productRepo.findById("1").pipe(shareReplay());
+    result.subscribe();
+    app.database().ref("/products/1/price").set(456);
+
+    expect(result).toBeObservable(cold("(ab)", {
+      a: jasmine.objectContaining({
+        $id: "1",
+        price: 123,
+      }),
+      b: jasmine.objectContaining({
+        $id: "1",
+        price: 456,
+      }),
+    }));
+  });
+
+  it("listens to changes to entities matching the query", () => {
+    app.database().ref("/products").set({
+      id1: { price: 1 },
+      id2: { price: 2 },
+      id4: { price: 4 },
+    });
+
+    const result = productRepo.findAll(q => q.orderByKey().startAt("id2").limitToFirst(2))
+      .pipe(shareReplay());
+    result.subscribe();
+    app.database().ref("/products/id3").set({
+      price: 3,
+    });
+
+    expect(result).toBeObservable(cold("(ab)", {
+      a: [
+        jasmine.objectContaining({ $id: "id2" }),
+        jasmine.objectContaining({ $id: "id4" }),
+      ],
+      b: [
+        jasmine.objectContaining({ $id: "id2" }),
+        jasmine.objectContaining({ $id: "id3" }),
+      ],
+    }));
+  });
+
+  it("ignores changes to entities not related to the query", () => {
+    app.database().ref("/products").set({
+      id1: { price: 1 },
+      id2: { price: 2 },
+      id3: { price: 3 },
+    });
+
+    const result = productRepo.findAll(q => q.orderByKey().startAt("id2").limitToFirst(2))
+      .pipe(shareReplay());
+    result.subscribe();
+    app.database().ref("/products/id4").set({
+      price: 4,
+    });
+
+    expect(result).toBeObservable(cold("a", {
+      a: [
+        jasmine.objectContaining({ $id: "id2" }),
+        jasmine.objectContaining({ $id: "id3" }),
+      ],
+    }));
+  });
+
   it("inserts new entity with assigned id", async () => {
     const product = new Product();
     product.$id = "product1";
@@ -262,8 +337,3 @@ describe("Repository", () => {
   });
 });
 
-@entity("/products")
-class Product extends Entity {
-  price: number;
-  categories: { [id: string]: true };
-}
