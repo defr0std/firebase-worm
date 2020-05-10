@@ -30,7 +30,7 @@ session.dispose();
 ```
 
 `firebase-worm` does not initialize the firebase application. You need to do it 
-yourself in your preferred way, and then create a `Session` object using 
+yourself in your preferred way, and then create a `Session` instance.
 
 The `Session` accumulates the changes in memory as you work with the entities. When
 `Session.commit` is called, all changes are persisted to the database.
