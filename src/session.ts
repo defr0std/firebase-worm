@@ -1,7 +1,7 @@
-import { database } from "firebase/app";
 import { ClassConstructor, Entity } from "./entity";
 import { SessionImpl } from "./sessionImpl";
 import { Repository } from "./repository";
+import { database } from "firebase-admin";
 
 export class Session {
   private readonly sessionImpl: SessionImpl;

@@ -5,6 +5,7 @@ import { Session } from "./session";
 import { entity, Entity } from "./entity";
 import { Repository } from "./repository";
 import { shareReplay } from "rxjs/operators";
+import { app, initializeApp } from "firebase-admin";
 
 @entity("/products")
 class Product extends Entity {
@@ -13,11 +14,12 @@ class Product extends Entity {
 }
 
 describe("Repository", () => {
-  let app: firebase.app.App;
+  let app: app.App;
   let session: Session;
   let productRepo: Repository<Product>;
   beforeAll(() => {
-    app = initializeAdminApp({ databaseName: "test" });
+    const testApp = initializeAdminApp({ databaseName: "test" });
+    app = initializeApp(testApp.options);
   });
   beforeEach(() => {
     session = new Session(app.database());

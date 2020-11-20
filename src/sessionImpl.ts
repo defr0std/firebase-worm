@@ -1,11 +1,12 @@
 import { compare } from "fast-json-patch";
+import { database } from "firebase-admin";
 
 export class SessionImpl {
   private readonly cache: object;
   private updates: object;
   private inserts: object;
 
-  constructor(public readonly db: firebase.database.Database) {
+  constructor(public readonly db: database.Database) {
     this.cache = {};
     this.updates = {};
     this.inserts = {};

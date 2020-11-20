@@ -3,6 +3,7 @@ import { ClassConstructor, entityPath, Entity } from "./entity";
 import { Observable } from "rxjs";
 import { map, first } from "rxjs/operators";
 import { QueryFunc, Query } from "./query";
+import {database} from "firebase-admin";
 
 export class Repository<T extends Entity> {
   constructor(private readonly sessionImpl: SessionImpl, private readonly cls: ClassConstructor<T>) {
@@ -54,7 +55,7 @@ export class Repository<T extends Entity> {
 
   private observableList(path: string, query?: QueryFunc<T>): Observable<EntityList<T>> {
     return new Observable(observer => {
-      let ref: firebase.database.Query = this.sessionImpl.db.ref(path);
+      let ref: database.Query = this.sessionImpl.db.ref(path);
       if (query) {
         const q = query(new Query<T>());
         ref = q.toRef(ref);

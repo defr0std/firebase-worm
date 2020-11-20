@@ -1,3 +1,5 @@
+import {database} from "firebase-admin";
+
 function captureFields(q: (_: any) => any) {
   let proxy: object;
   const fields: string[] = [];
@@ -51,7 +53,7 @@ export class Query<T> {
     return this;
   }
 
-  toRef(ref: firebase.database.Query): firebase.database.Query {
+  toRef(ref: database.Query): database.Query {
     if (this.childPath) {
       ref = ref.orderByChild(this.childPath.join("/"));
     }
