@@ -14,7 +14,7 @@ export class Repository<T extends Entity> {
     return this.observableObject<T>(path).pipe(
       map((entity) => {
         if (entity) {
-          entity.$id = id;
+          entity.id = id;
           this.sessionImpl.addToCache(entity, path);
         }
         return entity;
@@ -31,7 +31,7 @@ export class Repository<T extends Entity> {
     return this.observableList(basePath, query).pipe(
       map((entityList) => {
         for (let i = 0; i < entityList.entities.length; ++i) {
-          entityList.entities[i].$id = entityList.ids[i];
+          entityList.entities[i].id = entityList.ids[i];
           const fullPath = this.combinePath(basePath, entityList.ids[i]);
           this.sessionImpl.addToCache(entityList.entities[i], fullPath);
         }
@@ -88,7 +88,7 @@ export class Repository<T extends Entity> {
   }
 
   private objectPath(entity: T) {
-    return this.combinePath(entityPath(this.cls), entity.$id);
+    return this.combinePath(entityPath(this.cls), entity.id);
   }
 }
 

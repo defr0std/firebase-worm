@@ -56,6 +56,10 @@ export class SessionImpl {
     this.inserts = {};
   }
 
+  public getUpdates(): object {
+    return this.updates;
+  }
+
   public addToCache(entity: any, path: string) {
     // Prevent new cache updates to preserve consistency of the current data
     // view. Consider optimistic conflict detection if needed.

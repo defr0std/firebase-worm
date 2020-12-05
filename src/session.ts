@@ -17,5 +17,9 @@ export class Session {
   public async commit(): Promise<void> {
     await this.sessionImpl.commit();
   }
+
+  public getUpdates(): object {
+    return this.sessionImpl.getUpdates();
+  }
 }
 

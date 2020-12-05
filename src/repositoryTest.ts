@@ -36,7 +36,7 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: jasmine.objectContaining({
-        $id: "1",
+        id: "1",
         price: 123,
       }),
     }));
@@ -52,8 +52,8 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "id1", price: 123 }),
-        jasmine.objectContaining({ $id: "id2", price: 456 }),
+        jasmine.objectContaining({ id: "id1", price: 123 }),
+        jasmine.objectContaining({ id: "id2", price: 456 }),
       ],
     }));
   });
@@ -99,8 +99,8 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "id1" }),
-        jasmine.objectContaining({ $id: "id2" }),
+        jasmine.objectContaining({ id: "id1" }),
+        jasmine.objectContaining({ id: "id2" }),
       ],
     }));
   });
@@ -115,8 +115,8 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "id1" }),
-        jasmine.objectContaining({ $id: "id2" }),
+        jasmine.objectContaining({ id: "id1" }),
+        jasmine.objectContaining({ id: "id2" }),
       ],
     }));
   });
@@ -132,8 +132,8 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "id1" }),
-        jasmine.objectContaining({ $id: "id2" }),
+        jasmine.objectContaining({ id: "id1" }),
+        jasmine.objectContaining({ id: "id2" }),
       ],
     }));
   });
@@ -149,8 +149,8 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "id2" }),
-        jasmine.objectContaining({ $id: "id3" }),
+        jasmine.objectContaining({ id: "id2" }),
+        jasmine.objectContaining({ id: "id3" }),
       ],
     }));
   });
@@ -166,8 +166,8 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "id2" }),
-        jasmine.objectContaining({ $id: "id3" }),
+        jasmine.objectContaining({ id: "id2" }),
+        jasmine.objectContaining({ id: "id3" }),
       ],
     }));
   });
@@ -183,8 +183,8 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "id1" }),
-        jasmine.objectContaining({ $id: "id2" }),
+        jasmine.objectContaining({ id: "id1" }),
+        jasmine.objectContaining({ id: "id2" }),
       ],
     }));
   });
@@ -199,11 +199,11 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("(ab)", {
       a: jasmine.objectContaining({
-        $id: "1",
+        id: "1",
         price: 123,
       }),
       b: jasmine.objectContaining({
-        $id: "1",
+        id: "1",
         price: 456,
       }),
     }));
@@ -225,12 +225,12 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("(ab)", {
       a: [
-        jasmine.objectContaining({ $id: "id2" }),
-        jasmine.objectContaining({ $id: "id4" }),
+        jasmine.objectContaining({ id: "id2" }),
+        jasmine.objectContaining({ id: "id4" }),
       ],
       b: [
-        jasmine.objectContaining({ $id: "id2" }),
-        jasmine.objectContaining({ $id: "id3" }),
+        jasmine.objectContaining({ id: "id2" }),
+        jasmine.objectContaining({ id: "id3" }),
       ],
     }));
   });
@@ -251,15 +251,15 @@ describe("Repository", () => {
 
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "id2" }),
-        jasmine.objectContaining({ $id: "id3" }),
+        jasmine.objectContaining({ id: "id2" }),
+        jasmine.objectContaining({ id: "id3" }),
       ],
     }));
   });
 
   it("inserts new entity with assigned id", async () => {
     const product = new Product();
-    product.$id = "product1";
+    product.id = "product1";
     product.price = 123;
 
     productRepo.save(product);
@@ -268,14 +268,14 @@ describe("Repository", () => {
     const result = productRepo.findAll();
     expect(result).toBeObservable(cold("a", {
       a: [
-        jasmine.objectContaining({ $id: "product1", price: 123 }),
+        jasmine.objectContaining({ id: "product1", price: 123 }),
       ],
     }));
   });
 
   it("updates entity after insert", async () => {
     const product = new Product();
-    product.$id = "product1";
+    product.id = "product1";
     product.price = 123;
     productRepo.save(product);
 

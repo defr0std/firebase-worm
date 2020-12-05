@@ -3,7 +3,7 @@ import "reflect-metadata";
 const EntityKey = "fireworm:entity";
 
 export class Entity {
-  $id?: string;
+  id?: string;
 }
 
 export interface ClassConstructor<T = any> {
