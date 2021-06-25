@@ -2,7 +2,7 @@ import "reflect-metadata";
 
 const EntityKey = "fireworm:entity";
 
-export class Entity {
+export interface PersistedEntity {
   id?: string;
 }
 

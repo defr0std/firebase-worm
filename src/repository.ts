@@ -1,11 +1,11 @@
 import { SessionImpl } from "./sessionImpl";
-import { ClassConstructor, entityPath, Entity } from "./entity";
+import { ClassConstructor, entityPath, PersistedEntity } from "./entity";
 import { Observable } from "rxjs";
 import { map, first } from "rxjs/operators";
 import { QueryFunc, Query } from "./query";
 import {database} from "firebase-admin";
 
-export class Repository<T extends Entity> {
+export class Repository<T extends PersistedEntity> {
   constructor(private readonly sessionImpl: SessionImpl, private readonly cls: ClassConstructor<T>) {
   }
 

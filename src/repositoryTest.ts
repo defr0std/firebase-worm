@@ -2,13 +2,14 @@ import "jasmine";
 import { cold } from "jasmine-marbles";
 import { initializeAdminApp } from "@firebase/testing";
 import { Session } from "./session";
-import { entity, Entity } from "./entity";
+import { entity, PersistedEntity } from "./entity";
 import { Repository } from "./repository";
 import { shareReplay } from "rxjs/operators";
 import { app, initializeApp } from "firebase-admin";
 
 @entity("/products")
-class Product extends Entity {
+class Product implements PersistedEntity {
+  id: string;
   price: number;
   categories: { [id: string]: true };
 }
