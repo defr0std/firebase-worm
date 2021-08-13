@@ -2,7 +2,7 @@ import "jasmine";
 import { cold } from "jasmine-marbles";
 import { initializeAdminApp } from "@firebase/testing";
 import { Session } from "./session";
-import { entity, PersistedEntity } from "./entity";
+import { entity, PersistedEntity, registerPersistedEntity } from "./entity";
 import { Repository } from "./repository";
 import { shareReplay } from "rxjs/operators";
 import { app, initializeApp } from "firebase-admin";
@@ -13,6 +13,12 @@ class Product implements PersistedEntity {
   price: number;
   categories: { [id: string]: true };
 }
+
+class ManualEntity implements PersistedEntity {
+  id: string;
+  name: string;
+}
+registerPersistedEntity(ManualEntity, "/manual");
 
 describe("Repository", () => {
   let app: app.App;
@@ -57,6 +63,20 @@ describe("Repository", () => {
         jasmine.objectContaining({ id: "id2", price: 456 }),
       ],
     }));
+  });
+
+  it("finds all entities as promise", async () => {
+    app.database().ref("/products").set({
+      id1: { price: 123 },
+      id2: { price: 456 },
+    });
+
+    const result = await productRepo.findAllAsPromise();
+
+    expect(result).toEqual([
+      jasmine.objectContaining({ id: "id1", price: 123 }),
+      jasmine.objectContaining({ id: "id2", price: 456 }),
+    ]);
   });
 
   it("filters by child property", () => {
@@ -336,6 +356,19 @@ describe("Repository", () => {
     const result = productRepo.findAll();
     expect(result).toBeObservable(cold("a", {
       a: [],
+    }));
+  });
+
+  it("supports manually registered entities", async () => {
+    app.database().ref("/manual/1").set({
+      name: "entity 1",
+    });
+
+    const entity = await session.repository(ManualEntity).findByIdAsPromise("1");
+
+    expect(entity).toEqual(jasmine.objectContaining({
+      id: "1",
+      name: "entity 1",
     }));
   });
 });

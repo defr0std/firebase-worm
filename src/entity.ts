@@ -7,13 +7,12 @@ export interface PersistedEntity {
 }
 
 export interface ClassConstructor<T = any> {
-    new(): T;
+  new(): T;
 }
 
 export function entity(path: string) {
-  return function (c: Function) {
-    const metadata: EntityMetadata = {path};
-    Reflect.defineMetadata(EntityKey, metadata, c);
+  return (c: ClassConstructor) => {
+    registerPersistedEntity(c, path);
   }
 }
 
@@ -27,4 +26,9 @@ export function entityPath(cls: ClassConstructor) {
 
 interface EntityMetadata {
   path: string;
+}
+
+export function registerPersistedEntity(cls: ClassConstructor, path: string) {
+  const metadata: EntityMetadata = { path };
+  Reflect.defineMetadata(EntityKey, metadata, cls);
 }

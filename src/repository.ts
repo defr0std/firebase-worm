@@ -40,6 +40,10 @@ export class Repository<T extends PersistedEntity> {
     );
   }
 
+  public findAllAsPromise(query?: QueryFunc<T>): Promise<T[]> {
+    return this.findAll(query).pipe(first()).toPromise()
+  }
+
   public save(entity: T) {
     this.sessionImpl.save(entity, this.objectPath(entity));
   }
