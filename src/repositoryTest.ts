@@ -371,5 +371,18 @@ describe("Repository", () => {
       name: "entity 1",
     }));
   });
+
+  it("accepts a raw path", async () => {
+    app.database().ref("/raw/1").set({
+      name: "entity 1",
+    });
+
+    const entity = await session.repository<ManualEntity>("/raw").findByIdAsPromise("1");
+
+    expect(entity).toEqual(jasmine.objectContaining({
+      id: "1",
+      name: "entity 1",
+    }));
+  });
 });
 

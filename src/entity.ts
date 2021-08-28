@@ -10,6 +10,8 @@ export interface ClassConstructor<T = any> {
   new(): T;
 }
 
+export type EntitySpec<T> = ClassConstructor<T> | string;
+
 export function entity(path: string) {
   return (c: ClassConstructor) => {
     registerPersistedEntity(c, path);

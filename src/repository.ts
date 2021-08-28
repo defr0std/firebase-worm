@@ -1,16 +1,22 @@
 import { SessionImpl } from "./sessionImpl";
-import { ClassConstructor, entityPath, PersistedEntity } from "./entity";
+import { entityPath, EntitySpec, PersistedEntity } from "./entity";
 import { Observable } from "rxjs";
 import { map, first } from "rxjs/operators";
 import { QueryFunc, Query } from "./query";
-import {database} from "firebase-admin";
+import { database } from "firebase-admin";
 
 export class Repository<T extends PersistedEntity> {
-  constructor(private readonly sessionImpl: SessionImpl, private readonly cls: ClassConstructor<T>) {
+  private readonly basePath: string;
+
+  constructor(
+    private readonly sessionImpl: SessionImpl,
+    spec: EntitySpec<T>,
+  ) {
+    this.basePath = typeof spec === "string" ? spec : entityPath(spec);
   }
 
   public findById(id: string): Observable<T> {
-    const path = this.combinePath(entityPath(this.cls), id);
+    const path = this.childPath(id);
     return this.observableObject<T>(path).pipe(
       map((entity) => {
         if (entity) {
@@ -27,12 +33,11 @@ export class Repository<T extends PersistedEntity> {
   }
 
   public findAll(query?: QueryFunc<T>): Observable<T[]> {
-    const basePath = entityPath(this.cls);
-    return this.observableList(basePath, query).pipe(
+    return this.observableList(this.basePath, query).pipe(
       map((entityList) => {
         for (let i = 0; i < entityList.entities.length; ++i) {
           entityList.entities[i].id = entityList.ids[i];
-          const fullPath = this.combinePath(basePath, entityList.ids[i]);
+          const fullPath = this.childPath(entityList.ids[i]);
           this.sessionImpl.addToCache(entityList.entities[i], fullPath);
         }
         return entityList.entities;
@@ -53,7 +58,7 @@ export class Repository<T extends PersistedEntity> {
   }
 
   public deleteById(id: string) {
-    const path = this.combinePath(entityPath(this.cls), id);
+    const path = this.childPath(id);
     this.sessionImpl.delete(path);
   }
 
@@ -87,12 +92,12 @@ export class Repository<T extends PersistedEntity> {
     });
   }
 
-  private combinePath(base: string, child: string) {
-    return base + '/' + child;
+  private childPath(child: string) {
+    return this.basePath + '/' + child;
   }
 
   private objectPath(entity: T) {
-    return this.combinePath(entityPath(this.cls), entity.id);
+    return this.childPath(entity.id);
   }
 }
 
