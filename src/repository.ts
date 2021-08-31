@@ -21,12 +21,11 @@ export class Repository<T extends PersistedEntity> {
   public findById(id: string, pathMap?: PathMap): Observable<T> {
     const mapping = Object.assign({}, pathMap, { id });
     const path = this.resolvePath(mapping);
-
     return this.observableObject<T>(path).pipe(
       map((entity) => {
         if (entity) {
           entity.id = id;
-          this.sessionImpl.addToCache(entity, path);
+          return createProxy(entity, this.onFirstEntityChange);
         }
         return entity;
       }),
@@ -45,12 +44,12 @@ export class Repository<T extends PersistedEntity> {
     const path = this.resolvePath(pathMap || {});
     return this.observableList(path, q).pipe(
       map((entityList) => {
+        const proxies: T[] = [];
         for (let i = 0; i < entityList.entities.length; ++i) {
-          const entityPath = `${path}/${entityList.ids[i]}`;
           entityList.entities[i].id = entityList.ids[i];
-          this.sessionImpl.addToCache(entityList.entities[i], entityPath);
+          proxies.push(createProxy(entityList.entities[i], this.onFirstEntityChange));
         }
-        return entityList.entities;
+        return proxies;
       }),
     );
   }
@@ -60,13 +59,13 @@ export class Repository<T extends PersistedEntity> {
   }
 
   public save(entity: T) {
-    const mapping = this.getPathMappingForEntity(entity);
+    const mapping = this.getPathMapForEntity(entity);
     const path = this.resolvePath(mapping);
     this.sessionImpl.save(entity, path);
   }
 
   public delete(entity: T) {
-    const mapping = this.getPathMappingForEntity(entity);
+    const mapping = this.getPathMapForEntity(entity);
     const path = this.resolvePath(mapping);
     this.sessionImpl.delete(path);
   }
@@ -137,13 +136,19 @@ export class Repository<T extends PersistedEntity> {
     return parts.join("");
   }
 
-  private getPathMappingForEntity(entity: T): PathMap {
+  private getPathMapForEntity(entity: T): PathMap {
     const mapping: PathMap = {};
     mapping.id = entity.id;
     for (const component of this.boundComponents) {
       mapping[component.binding] = entity[component.binding];
     }
     return mapping;
+  }
+
+  private onFirstEntityChange = (entity: T) => {
+    const pathMap = this.getPathMapForEntity(entity);
+    const path = this.resolvePath(pathMap);
+    this.sessionImpl.addToCache(entity, path);
   }
 }
 
@@ -152,3 +157,20 @@ interface EntityList<T> {
   ids: string[];
 }
 
+function createProxy<T extends object>(
+  entity: T,
+  onFirstChange: (entity: T) => void,
+) {
+  let dirty = false;
+  const handlers = {
+    set: (target: T, field: string, value: any) => {
+      if (!dirty) {
+        onFirstChange(target);
+        dirty = true;
+      }
+      target[field] = value;
+      return true;
+    }
+  };
+  return new Proxy(entity, handlers);
+}

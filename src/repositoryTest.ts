@@ -328,8 +328,46 @@ describe("Repository", () => {
     });
 
     const product = await productRepo.findByIdAsPromise("1");
+    product.price = 345;
     product.price = 456;
     productRepo.save(product);
+    session.commit();
+
+    const result = productRepo.findAll();
+    expect(result).toBeObservable(cold("a", {
+      a: [
+        jasmine.objectContaining({ price: 456 }),
+      ],
+    }));
+  });
+
+  it("updates entity after finding (setting same value twice)", async () => {
+    app.database().ref("/products/1").set({
+      price: 123,
+    });
+
+    const product = await productRepo.findByIdAsPromise("1");
+    product.price = 456;
+    product.price = 456;
+    productRepo.save(product);
+    session.commit();
+
+    const result = productRepo.findAll();
+    expect(result).toBeObservable(cold("a", {
+      a: [
+        jasmine.objectContaining({ price: 456 }),
+      ],
+    }));
+  });
+
+  it("updates entity after finding all", async () => {
+    app.database().ref("/products/1").set({
+      price: 123,
+    });
+
+    const products = await productRepo.findAllAsPromise();
+    products[0].price = 456;
+    productRepo.save(products[0]);
     session.commit();
 
     const result = productRepo.findAll();
