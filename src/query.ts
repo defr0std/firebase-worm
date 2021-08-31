@@ -1,4 +1,5 @@
 import {database} from "firebase-admin";
+import { PathMap } from "./entity";
 
 function captureFields(q: (_: any) => any) {
   let proxy: object;

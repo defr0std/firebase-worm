@@ -14,6 +14,14 @@ class Product implements PersistedEntity {
   categories: { [id: string]: true };
 }
 
+@entity("/{country}/products/{category}")
+class NestedProduct implements PersistedEntity {
+  id: string;
+  price: number;
+  country: string;
+  category: string;
+}
+
 class ManualEntity implements PersistedEntity {
   id: string;
   name: string;
@@ -24,6 +32,7 @@ describe("Repository", () => {
   let app: app.App;
   let session: Session;
   let productRepo: Repository<Product>;
+  let nestedProductRepo: Repository<NestedProduct>;
   beforeAll(() => {
     const testApp = initializeAdminApp({ databaseName: "test" });
     app = initializeApp(testApp.options);
@@ -31,6 +40,7 @@ describe("Repository", () => {
   beforeEach(() => {
     session = new Session(app.database());
     productRepo = session.repository(Product);
+    nestedProductRepo = session.repository(NestedProduct);
     app.database().ref("/").set(null);
   });
 
@@ -383,6 +393,135 @@ describe("Repository", () => {
       id: "1",
       name: "entity 1",
     }));
+  });
+
+  describe("with bound path", () => {
+    it("finds entity by id", () => {
+      app.database().ref("/uk/products/food/1").set({
+        price: 123,
+      });
+
+      const result = nestedProductRepo.findById("1", { country: "uk", category: "food" });
+
+      expect(result).toBeObservable(cold("a", {
+        a: jasmine.objectContaining({
+          id: "1",
+          price: 123,
+        }),
+      }));
+    });
+
+    it("checks bound fields when finding by id", () => {
+      // Missing country path.
+      expect(() => nestedProductRepo.findById("1", { country: "uk" })).toThrow();
+    });
+
+    it("checks extra bound fields", () => {
+      expect(() => nestedProductRepo.findById(
+        "1", { country: "uk", category: "food", subCategory: "sweets" })).toThrow();
+    });
+
+    it("finds all entities", () => {
+      app.database().ref("/uk/products/food").set({
+        id1: { price: 123 },
+        id2: { price: 456 },
+      });
+      app.database().ref("/uk/products/drinks").set({
+        id1: { price: 1000 },
+        id2: { price: 2000 },
+      });
+
+      const result = nestedProductRepo.findAll(
+        null, { country: "uk", category: "food" });
+
+      expect(result).toBeObservable(cold("a", {
+        a: [
+          jasmine.objectContaining({ id: "id1", price: 123 }),
+          jasmine.objectContaining({ id: "id2", price: 456 }),
+        ],
+      }));
+    });
+
+    it("checks bound fields when finding all", () => {
+      // Missing country path.
+      expect(() =>
+        nestedProductRepo.findAll(null, { country: "uk" })).toThrow();
+    });
+
+    it("inserts new entity with assigned id", async () => {
+      const product = new NestedProduct();
+      product.id = "product1";
+      product.country = "uk";
+      product.category = "food";
+      product.price = 123;
+
+      nestedProductRepo.save(product);
+      session.commit();
+
+      const result = nestedProductRepo.findAll(null, { country: "uk", category: "food" });
+      expect(result).toBeObservable(cold("a", {
+        a: [
+          jasmine.objectContaining({
+            id: "product1", price: 123, country: "uk", category: "food"
+          }),
+        ],
+      }));
+    });
+
+    it("updates entity after insert", async () => {
+      const product = new NestedProduct();
+      product.id = "product1";
+      product.country = "uk";
+      product.category = "food";
+      product.price = 123;
+      nestedProductRepo.save(product);
+
+      product.price = 456;
+      nestedProductRepo.save(product);
+      session.commit();
+
+      const result = nestedProductRepo.findAll(null, { country: "uk", category: "food" });
+      expect(result).toBeObservable(cold("a", {
+        a: [
+          jasmine.objectContaining({
+            id: "product1", price: 456, country: "uk", category: "food"
+          }),
+        ],
+      }));
+    });
+
+    it("deletes after finding", async () => {
+      app.database().ref("/uk/products/food/1").set({
+        price: 123,
+        country: "uk",
+        category: "food",
+      });
+
+      const product = await nestedProductRepo.findByIdAsPromise(
+        "1", { country: "uk", category: "food" });
+      nestedProductRepo.delete(product);
+      session.commit();
+
+      const result = nestedProductRepo.findAll(null, { country: "uk", category: "food" });
+      expect(result).toBeObservable(cold("a", {
+        a: [],
+      }));
+    });
+
+    it("deletes by id", async () => {
+      app.database().ref("/uk/products/food/1").set({
+        price: 123,
+      });
+
+      nestedProductRepo.deleteById("1", { country: "uk", category: "food" });
+      session.commit();
+
+      const result = nestedProductRepo.findAll(null, { country: "uk", category: "food" });
+      expect(result).toBeObservable(cold("a", {
+        a: [],
+      }));
+    });
+
   });
 });
 
