@@ -79,7 +79,7 @@ export class SessionImpl {
 
   private removeId(entity: any) {
     const clone = Object.assign({}, entity);
-    delete clone.$id;
+    delete clone.id;
     return clone;
   }
 }

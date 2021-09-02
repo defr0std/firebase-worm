@@ -302,6 +302,10 @@ describe("Repository", () => {
         jasmine.objectContaining({ id: "product1", price: 123 }),
       ],
     }));
+    const savedProduct = await readFromDb("/products/product1");
+    expect(savedProduct).toEqual({
+      price: 123,
+    });
   });
 
   it("updates entity after insert", async () => {
@@ -561,5 +565,13 @@ describe("Repository", () => {
     });
 
   });
+
+  function readFromDb(path: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      app.database().ref(path).once("value", (s) => {
+        resolve(s.val());
+      }, reject);
+    });
+  }
 });
 
