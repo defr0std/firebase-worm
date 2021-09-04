@@ -25,6 +25,7 @@ export class Repository<T extends PersistedEntity> {
       map((entity) => {
         if (entity) {
           entity.id = id;
+          Object.assign(entity, pathMap);
           return createProxy(entity, this.onFirstEntityChange);
         }
         return entity;
@@ -47,6 +48,7 @@ export class Repository<T extends PersistedEntity> {
         const proxies: T[] = [];
         for (let i = 0; i < entityList.entities.length; ++i) {
           entityList.entities[i].id = entityList.ids[i];
+          Object.assign(entityList.entities[i], pathMap);
           proxies.push(createProxy(entityList.entities[i], this.onFirstEntityChange));
         }
         return proxies;
@@ -59,9 +61,9 @@ export class Repository<T extends PersistedEntity> {
   }
 
   public save(entity: T) {
-    const mapping = this.getPathMapForEntity(entity);
-    const path = this.resolvePath(mapping);
-    this.sessionImpl.save(entity, path);
+    const pathMap = this.getPathMapForEntity(entity);
+    const path = this.resolvePath(pathMap);
+    this.sessionImpl.save(entity, path, pathMap);
   }
 
   public delete(entity: T) {

@@ -1,5 +1,6 @@
 import { compare } from "fast-json-patch";
 import { database } from "firebase-admin";
+import { PathMap } from "./entity";
 
 export class SessionImpl {
   private readonly cache: object;
@@ -12,8 +13,8 @@ export class SessionImpl {
     this.inserts = {};
   }
 
-  public save(entity: any, path: string): void {
-    entity = this.removeId(entity);
+  public save(entity: any, path: string, pathMap?: PathMap): void {
+    entity = this.cloneForSave(entity, pathMap);
     if (this.inserts[path]) {
       this.updates[path] = entity;
       return;
@@ -60,11 +61,11 @@ export class SessionImpl {
     return this.updates;
   }
 
-  public addToCache(entity: any, path: string) {
+  public addToCache(entity: any, path: string, pathMap?: PathMap) {
     // Prevent new cache updates to preserve consistency of the current data
     // view. Consider optimistic conflict detection if needed.
     if (!this.isUpdateStarted()) {
-      this.cache[path] = this.removeId(entity);
+      this.cache[path] = this.cloneForSave(entity, pathMap);
     }
   }
 
@@ -77,9 +78,17 @@ export class SessionImpl {
     return false;
   }
 
-  private removeId(entity: any) {
+  private cloneForSave(entity: any, pathMap?: PathMap) {
     const clone = Object.assign({}, entity);
     delete clone.id;
+    if (pathMap) {
+      for (const field in pathMap) {
+        if (!pathMap.hasOwnProperty(field)) {
+          continue;
+        }
+        delete clone[field];
+      }
+    }
     return clone;
   }
 }

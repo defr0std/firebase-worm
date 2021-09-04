@@ -446,10 +446,7 @@ describe("Repository", () => {
       const result = nestedProductRepo.findById("1", { country: "uk", category: "food" });
 
       expect(result).toBeObservable(cold("a", {
-        a: jasmine.objectContaining({
-          id: "1",
-          price: 123,
-        }),
+        a: jasmine.objectContaining({ id: "1", price: 123, country: "uk", category: "food" }),
       }));
     });
 
@@ -478,8 +475,8 @@ describe("Repository", () => {
 
       expect(result).toBeObservable(cold("a", {
         a: [
-          jasmine.objectContaining({ id: "id1", price: 123 }),
-          jasmine.objectContaining({ id: "id2", price: 456 }),
+          jasmine.objectContaining({ id: "id1", price: 123, country: "uk", category: "food" }),
+          jasmine.objectContaining({ id: "id2", price: 456, country: "uk", category: "food" }),
         ],
       }));
     });
@@ -508,6 +505,10 @@ describe("Repository", () => {
           }),
         ],
       }));
+      const savedProduct = await readFromDb("/uk/products/food/product1");
+      expect(savedProduct).toEqual({
+        price: 123,
+      });
     });
 
     it("updates entity after insert", async () => {
