@@ -78,6 +78,12 @@ export class Repository<T extends PersistedEntity> {
     this.sessionImpl.delete(path);
   }
 
+  public updateInTransaction(entity: T, fn: TransactionFunc<T>) {
+    const mapping = this.getPathMapForEntity(entity);
+    const path = this.resolvePath(mapping);
+    return this.sessionImpl.db.ref(path).transaction(fn);
+  }
+
   private observableList(path: string, query?: Query<T>): Observable<EntityList<T>> {
     return new Observable(observer => {
       let ref: database.Query = this.sessionImpl.db.ref(path);
@@ -153,6 +159,8 @@ export class Repository<T extends PersistedEntity> {
     this.sessionImpl.addToCache(entity, path);
   }
 }
+
+export type TransactionFunc<T> = (existing: T) => T | null | undefined;
 
 interface EntityList<T> {
   entities: T[];
