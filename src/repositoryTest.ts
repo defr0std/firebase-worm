@@ -572,12 +572,16 @@ describe("Repository", () => {
 
       const product = await productRepo.findByIdAsPromise("product1");
       product.price = 456;
-      await productRepo.updateInTransaction(product, (prev) => {
+      const transactionResult = await productRepo.updateInTransaction(product, (prev) => {
         if (prev.price === 123) {
           return product;
         }
       });
 
+      expect(transactionResult).toEqual({
+        committed: true,
+        value: jasmine.objectContaining({ price: 456 }),
+      });
       const result = productRepo.findAll();
       expect(result).toBeObservable(cold("a", {
         a: [
@@ -595,13 +599,17 @@ describe("Repository", () => {
 
       const product = await productRepo.findByIdAsPromise("product1");
       product.price = 456;
-      await productRepo.updateInTransaction(product, (prev) => {
+      const transactionResult = await productRepo.updateInTransaction(product, (prev) => {
         if (prev.price === 123) {
           return;
         }
         return product;
       });
 
+      expect(transactionResult).toEqual({
+        committed: false,
+        value: jasmine.objectContaining({ price: 123 }),
+      });
       const result = productRepo.findAll();
       expect(result).toBeObservable(cold("a", {
         a: [

@@ -78,10 +78,14 @@ export class Repository<T extends PersistedEntity> {
     this.sessionImpl.delete(path);
   }
 
-  public updateInTransaction(entity: T, fn: TransactionFunc<T>) {
+  public async updateInTransaction(entity: T, fn: TransactionFunc<T>): Promise<TransactionResult<T>> {
     const mapping = this.getPathMapForEntity(entity);
     const path = this.resolvePath(mapping);
-    return this.sessionImpl.db.ref(path).transaction(fn);
+    const result = await this.sessionImpl.db.ref(path).transaction(fn);
+    return {
+      committed: result.committed,
+      value: result.snapshot.val(),
+    };
   }
 
   private observableList(path: string, query?: Query<T>): Observable<EntityList<T>> {
@@ -161,6 +165,10 @@ export class Repository<T extends PersistedEntity> {
 }
 
 export type TransactionFunc<T> = (existing: T) => T | null | undefined;
+export interface TransactionResult<T> {
+  committed: boolean;
+  value: T;
+}
 
 interface EntityList<T> {
   entities: T[];
