@@ -42,6 +42,10 @@ export class Repository<T extends PersistedEntity> {
     if (query) {
       q = query(new Query<T>());
     }
+    return this.findAllInternal(q, pathMap);
+  }
+
+  private findAllInternal(q?: Query<T>, pathMap?: PathMap): Observable<T[]> {
     const path = this.resolvePath(pathMap || {});
     return this.observableList(path, q).pipe(
       map((entityList) => {
@@ -58,6 +62,44 @@ export class Repository<T extends PersistedEntity> {
 
   public findAllAsPromise(query?: QueryFunc<T>, pathMap?: PathMap): Promise<T[]> {
     return this.findAll(query, pathMap).pipe(first()).toPromise()
+  }
+
+  public findAllBatched(query?: QueryFunc<T>, pathMap?: PathMap, batchSize: number = 100): Observable<T[]> {
+    return new Observable<T[]>((observer) => {
+      query = query || ((q) => q);
+      let lastId: string = null;
+      let recursive = () => {
+        const q = query(new Query<T>());
+        const params = q.getParams();
+        if (lastId) {
+          if (params.orderByChild) {
+            q.startAt(params.equalTo, lastId + "\uf8ff");
+            q.endAt(params.equalTo);
+            q.equalTo(undefined);
+          }
+          else {
+            q.startAt(lastId + "\uf8ff");
+          }
+        }
+        q.limitToFirst(batchSize);
+        this.findAllInternal(q, pathMap).pipe(
+          first(),
+        ).subscribe((batch) => {
+          console.log("received batch", batch, lastId);
+          if (batch.length === 0) {
+            observer.complete();
+          }
+          else {
+            lastId = batch[batch.length - 1].id;
+            observer.next(batch);
+            recursive();
+          }
+        }, (e) => {
+          observer.error(e);
+        });
+      }
+      recursive();
+    });
   }
 
   public save(entity: T) {

@@ -1,4 +1,4 @@
-import {database} from "firebase-admin";
+import { database } from "firebase-admin";
 
 function captureFields(q: (_: any) => any) {
   let proxy: object;
@@ -15,65 +15,77 @@ function captureFields(q: (_: any) => any) {
   return fields;
 }
 
+export interface QueryParams {
+  orderByChild?: string;
+  equalTo?: any;
+  orderByKey?: boolean;
+  startAt?: string;
+  startAtId?: string;
+  endAt?: string;
+  limitToFirst?: number;
+  limitToLast?: number;
+}
+
 export class Query<T> {
-  private childPath: string[];
-  private doEqualTo: any;
-  private doOrderByKey: boolean;
-  private doStartAt: string;
-  private doEndAt: string;
-  private doLimitToFirst: number;
-  private doLimitToLast: number;
+  private params: QueryParams = {};
 
   orderBy(q: (obj: T) => any): Query<T> {
-    this.childPath = captureFields(q);
+    this.params.orderByChild = captureFields(q).join("/");
     return this;
   }
   orderByKey(): Query<T> {
-    this.doOrderByKey = true;
+    this.params.orderByKey = true;
     return this;
   }
-  startAt(key: string): Query<T> {
-    this.doStartAt = key;
+  startAt(value: string, id?: string): Query<T> {
+    this.params.startAt = value;
+    if (id) {
+      this.params.startAtId = id;
+    }
     return this;
   }
-  endAt(key: string): Query<T> {
-    this.doEndAt = key;
+  endAt(value: string): Query<T> {
+    this.params.endAt = value;
     return this;
   }
   limitToFirst(num: number): Query<T> {
-    this.doLimitToFirst = num;
+    this.params.limitToFirst = num;
     return this;
   }
   limitToLast(num: number): Query<T> {
-    this.doLimitToLast = num;
+    this.params.limitToLast = num;
     return this;
   }
   equalTo(v: any): Query<T> {
-    this.doEqualTo = v;
+    this.params.equalTo = v;
     return this;
   }
 
+  getParams(): QueryParams {
+    return this.params;
+  }
+
   toRef(ref: database.Query): database.Query {
-    if (this.childPath) {
-      ref = ref.orderByChild(this.childPath.join("/"));
+    if (this.params.orderByChild) {
+      ref = ref.orderByChild(this.params.orderByChild);
     }
-    if (this.doOrderByKey) {
+    if (this.params.orderByKey) {
       ref = ref.orderByKey();
     }
-    if (this.doStartAt !== undefined) {
-      ref = ref.startAt(this.doStartAt);
+    if (this.params.startAt !== undefined) {
+      ref = ref.startAt(this.params.startAt, this.params.startAtId);
     }
-    if (this.doEndAt !== undefined) {
-      ref = ref.endAt(this.doEndAt);
+    if (this.params.endAt !== undefined) {
+      ref = ref.endAt(this.params.endAt);
     }
-    if (this.doLimitToFirst !== undefined) {
-      ref = ref.limitToFirst(this.doLimitToFirst);
+    if (this.params.limitToFirst !== undefined) {
+      ref = ref.limitToFirst(this.params.limitToFirst);
     }
-    if (this.doLimitToLast !== undefined) {
-      ref = ref.limitToLast(this.doLimitToLast);
+    if (this.params.limitToLast !== undefined) {
+      ref = ref.limitToLast(this.params.limitToLast);
     }
-    if (this.doEqualTo) {
-      ref = ref.equalTo(this.doEqualTo);
+    if (this.params.equalTo) {
+      ref = ref.equalTo(this.params.equalTo);
     }
     return ref;
   }

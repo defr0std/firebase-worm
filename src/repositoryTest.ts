@@ -12,14 +12,15 @@ class Product implements PersistedEntity {
   id: string;
   price: number;
   categories: { [id: string]: true };
+  country?: string;
 }
 
 @entity("/{country}/products/{category}")
 class NestedProduct implements PersistedEntity {
   id: string;
   price: number;
-  country: string;
   category: string;
+  country: string;
 }
 
 class ManualEntity implements PersistedEntity {
@@ -620,6 +621,140 @@ describe("Repository", () => {
       }));
     });
 
+    describe("batched", () => {
+      it("single batch less than size", () => {
+        app.database().ref("/products").set({
+          id1: { price: 1 },
+          id2: { price: 2 },
+        });
+
+        const result = productRepo.findAllBatched(q => q.orderByKey(), null, 3);
+
+        expect(result).toBeObservable(cold("(a|)", {
+          a: [
+            { id: "id1", price: 1, },
+            { id: "id2", price: 2, },
+          ],
+        }));
+      });
+
+      it("single batch same as size", () => {
+        app.database().ref("/products").set({
+          id1: { price: 1 },
+          id2: { price: 2 },
+          id3: { price: 3 },
+        });
+
+        const result = productRepo.findAllBatched(q => q.orderByKey(), null, 3);
+
+        expect(result).toBeObservable(cold("(a|)", {
+          a: [
+            { id: "id1", price: 1, },
+            { id: "id2", price: 2, },
+            { id: "id3", price: 3, },
+          ],
+        }));
+      });
+
+      it("one more than batch size", () => {
+        app.database().ref("/products").set({
+          id1: { price: 1 },
+          id2: { price: 2 },
+          id3: { price: 3 },
+        });
+
+        const result = productRepo.findAllBatched(q => q.orderByKey(), null, 2);
+
+        expect(result).toBeObservable(cold("(ab|)", {
+          a: [
+            { id: "id1", price: 1, },
+            { id: "id2", price: 2, },
+          ],
+          b: [
+            { id: "id3", price: 3, },
+          ],
+        }));
+      });
+
+      it("two full batches", () => {
+        const data = {};
+        for (let i = 1; i <= 6; i++) {
+          data["id" + i] = { price: i };
+        }
+        app.database().ref("/products").set(data);
+
+        const result = productRepo.findAllBatched(q => q.orderByKey(), null, 3);
+
+        expect(result).toBeObservable(cold("(ab|)", {
+          a: [
+            { id: "id1", price: 1, },
+            { id: "id2", price: 2, },
+            { id: "id3", price: 3, },
+          ],
+          b: [
+            { id: "id4", price: 4, },
+            { id: "id5", price: 5, },
+            { id: "id6", price: 6, },
+          ],
+        }));
+      });
+
+      it("two full batches + spillover", () => {
+        const data = {};
+        for (let i = 1; i <= 7; i++) {
+          data["id" + i] = { price: i };
+        }
+        app.database().ref("/products").set(data);
+
+        const result = productRepo.findAllBatched(q => q.orderByKey(), null, 3);
+
+        expect(result).toBeObservable(cold("(abc|)", {
+          a: [
+            { id: "id1", price: 1, },
+            { id: "id2", price: 2, },
+            { id: "id3", price: 3, },
+          ],
+          b: [
+            { id: "id4", price: 4, },
+            { id: "id5", price: 5, },
+            { id: "id6", price: 6, },
+          ],
+          c: [
+            { id: "id7", price: 7, },
+          ],
+        }));
+      });
+
+      it("filter on child", () => {
+        const data = {};
+        for (let i = 1; i <= 7; i++) {
+          data["uk" + i] = { country: "uk", price: i };
+          data["ch" + i] = { country: "ch", price: i };
+        }
+        app.database().ref("/products").set(data);
+
+        const result = productRepo.findAllBatched(
+          q => q.orderBy(x => x.country).equalTo("uk"),
+          null, 3);
+
+        expect(result).toBeObservable(cold("(abc|)", {
+          a: [
+            { id: "uk1", price: 1, country: "uk", },
+            { id: "uk2", price: 2, country: "uk", },
+            { id: "uk3", price: 3, country: "uk", },
+          ],
+          b: [
+            { id: "uk4", price: 4, country: "uk", },
+            { id: "uk5", price: 5, country: "uk", },
+            { id: "uk6", price: 6, country: "uk", },
+          ],
+          c: [
+            { id: "uk7", price: 7, country: "uk" },
+          ],
+        }));
+      });
+
+    });
   });
 
   function readFromDb(path: string): Promise<any> {
