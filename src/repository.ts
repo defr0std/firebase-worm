@@ -71,13 +71,14 @@ export class Repository<T extends PersistedEntity> {
       let recursive = () => {
         const q = query(new Query<T>());
         const params = q.getParams();
-        if (lastId) {
-          if (params.orderByChild) {
-            q.startAt(params.equalTo, lastId + "\uf8ff");
-            q.endAt(params.equalTo);
-            q.equalTo(undefined);
-          }
-          else {
+        if (params.orderByChild) {
+          q.startAt(params.equalTo, lastId ? lastId + "\uf8ff" : "");
+          q.endAt(params.equalTo);
+          q.equalTo(undefined);
+        }
+        else {
+          q.orderByKey();
+          if (lastId) {
             q.startAt(lastId + "\uf8ff");
           }
         }
@@ -85,7 +86,6 @@ export class Repository<T extends PersistedEntity> {
         this.findAllInternal(q, pathMap).pipe(
           first(),
         ).subscribe((batch) => {
-          console.log("received batch", batch, lastId);
           if (batch.length === 0) {
             observer.complete();
           }

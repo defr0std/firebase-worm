@@ -64,18 +64,9 @@ export class SessionImpl {
   public addToCache(entity: any, path: string, pathMap?: PathMap) {
     // Prevent new cache updates to preserve consistency of the current data
     // view. Consider optimistic conflict detection if needed.
-    if (!this.isUpdateStarted()) {
+    if (!this.cache[path]) {
       this.cache[path] = this.cloneForSave(entity, pathMap);
     }
-  }
-
-  private isUpdateStarted(): boolean {
-    for (const id in this.updates) {
-      if (this.updates.hasOwnProperty(id)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private cloneForSave(entity: any, pathMap?: PathMap) {
