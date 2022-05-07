@@ -45,12 +45,6 @@ export class SessionImpl {
     this.updates[path] = null;
   }
 
-  public deleteAll(paths: string[]): void {
-    for (const path of paths) {
-      this.delete(path);
-    }
-  }
-
   public async commit(): Promise<void> {
     await this.db.ref().update(this.updates);
     this.updates = {};

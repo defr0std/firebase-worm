@@ -108,6 +108,12 @@ export class Repository<T extends PersistedEntity> {
     this.sessionImpl.save(entity, path, pathMap);
   }
 
+  public saveAll(entities: T[]) {
+    for (const entity of entities) {
+      this.save(entity);
+    }
+  }
+
   public delete(entity: T) {
     const mapping = this.getPathMapForEntity(entity);
     const path = this.resolvePath(mapping);
@@ -117,6 +123,11 @@ export class Repository<T extends PersistedEntity> {
   public deleteById(id: string, pathMap?: PathMap) {
     const mapping = Object.assign({}, pathMap, { id });
     const path = this.resolvePath(mapping);
+    this.sessionImpl.delete(path);
+  }
+
+  public deleteAll(pathMap?: PathMap) {
+    const path = this.resolvePath(pathMap || {});
     this.sessionImpl.delete(path);
   }
 

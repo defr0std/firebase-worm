@@ -412,6 +412,21 @@ describe("Repository", () => {
     }));
   });
 
+  it("deletes all", async () => {
+    app.database().ref("/products").set({
+      p1: { price: 1 },
+      p2: { price: 2 },
+    });
+
+    productRepo.deleteAll();
+    session.commit();
+
+    expect(productRepo.findAll())
+      .toBeObservable(cold("a", {
+        a: [],
+      }));
+  });
+
   it("supports manually registered entities", async () => {
     app.database().ref("/manual/1").set({
       name: "entity 1",
@@ -564,6 +579,43 @@ describe("Repository", () => {
       expect(result).toBeObservable(cold("a", {
         a: [],
       }));
+    });
+
+    it("deletes all", async () => {
+      app.database().ref("/uk/products/food").set({
+        p1: { price: 1 },
+        p2: { price: 2 },
+      });
+      app.database().ref("/ch/products/food").set({
+        p3: { price: 3 },
+        p4: { price: 4 },
+      });
+      app.database().ref("/uk/products/drinks").set({
+        p3: { price: 5 },
+        p4: { price: 6 },
+      });
+
+      nestedProductRepo.deleteAll({ country: "uk", category: "food" });
+      session.commit();
+
+      expect(nestedProductRepo.findAll(null, { country: "uk", category: "food" }))
+        .toBeObservable(cold("a", {
+          a: [],
+        }));
+      expect(nestedProductRepo.findAll(null, { country: "ch", category: "food" }))
+        .toBeObservable(cold("a", {
+          a: [
+            jasmine.objectContaining({ price: 3 }),
+            jasmine.objectContaining({ price: 4 }),
+          ],
+        }));
+      expect(nestedProductRepo.findAll(null, { country: "uk", category: "drinks" }))
+        .toBeObservable(cold("a", {
+          a: [
+            jasmine.objectContaining({ price: 5 }),
+            jasmine.objectContaining({ price: 6 }),
+          ],
+        }));
     });
 
     // TODO: Sometimes hangs in tests, debug.
